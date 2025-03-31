@@ -62,8 +62,8 @@ P_spam = Y_train.mean()
 P_no_spam = 1 - P_spam
 
 # Probabilidades condicionales (usando matrices dispersas)
-X_train_spam = X_train_features[Y_train == 1]
-X_train_no_spam = X_train_features[Y_train == 0]
+X_train_spam = X_train_features[Y_train.to_numpy() == 1]
+X_train_no_spam = X_train_features[Y_train.to_numpy() == 0]
 
 P_caracteristicas_spam = (X_train_spam.sum(axis=0) + 1) / (X_train_spam.sum() + X_train_features.shape[1])
 P_caracteristicas_no_spam = (X_train_no_spam.sum(axis=0) + 1) / (X_train_no_spam.sum() + X_train_features.shape[1])
@@ -90,26 +90,121 @@ model = LogisticRegression()
 # Entrenando el modelo de regresión logística con los datos de entrenamiento
 model.fit(X_train_features, Y_train)
 
-# In[]:
-# Construyendo un sistema de predicción
-mail = input('Email: ')
-input_mail = [mail]
+# Importar tkinter
+import tkinter as tk
+from tkinter import ttk
+from tkinter import scrolledtext
 
-# Convertirlo en un vector de caracteristicas
-input_mail_features = vectorizer.transform(input_mail)
+class SpamFilterGUI:
+    def __init__(self, root):
+        self.root = root
+        self.root.title("Filtro de Spam")
+        self.root.geometry("700x800")
+        
+        # Frame principal con scroll
+        main_frame = ttk.Frame(root)
+        main_frame.pack(fill=tk.BOTH, expand=True, padx=10, pady=10)
+        
+        # Campos del correo
+        self.create_email_fields(main_frame)
+        
+        # Botones
+        button_frame = ttk.Frame(main_frame)
+        button_frame.pack(fill=tk.X, pady=10)
+        
+        self.analyze_button = ttk.Button(button_frame, text="Analizar Correo", command=self.analyze_email)
+        self.analyze_button.pack(side=tk.LEFT, padx=5)
+        
+        self.clear_button = ttk.Button(button_frame, text="Limpiar Campos", command=self.clear_fields)
+        self.clear_button.pack(side=tk.LEFT, padx=5)
+        
+        # Área de resultados
+        result_frame = ttk.LabelFrame(main_frame, text="Resultado del Análisis")
+        result_frame.pack(fill=tk.X, pady=10)
+        
+        self.result_text = ttk.Label(result_frame, text="", font=('Arial', 12, 'bold'))
+        self.result_text.pack(pady=10)
+        
+        # Métricas
+        metrics_frame = ttk.LabelFrame(main_frame, text="Métricas del modelo")
+        metrics_frame.pack(fill=tk.X, pady=10)
+        
+        self.precision_label = ttk.Label(metrics_frame, text=f"Precisión: {precision:.2%}")
+        self.precision_label.pack(pady=5)
+        
+        self.recall_label = ttk.Label(metrics_frame, text=f"Recuperación: {recuperacion:.2%}")
+        self.recall_label.pack(pady=5)
 
-# Haciendo la predicción
-prediction = model.predict(input_mail_features)
+    def create_email_fields(self, parent):
+        # Frame para los campos del correo
+        email_frame = ttk.LabelFrame(parent, text="Datos del Correo")
+        email_frame.pack(fill=tk.X, pady=10)
+        
+        # From
+        ttk.Label(email_frame, text="From:").pack(anchor=tk.W, padx=5, pady=2)
+        self.from_entry = ttk.Entry(email_frame, width=60)
+        self.from_entry.pack(fill=tk.X, padx=5, pady=2)
+        
+        # To
+        ttk.Label(email_frame, text="To:").pack(anchor=tk.W, padx=5, pady=2)
+        self.to_entry = ttk.Entry(email_frame, width=60)
+        self.to_entry.pack(fill=tk.X, padx=5, pady=2)
+        
+        # Subject
+        ttk.Label(email_frame, text="Subject:").pack(anchor=tk.W, padx=5, pady=2)
+        self.subject_entry = ttk.Entry(email_frame, width=60)
+        self.subject_entry.pack(fill=tk.X, padx=5, pady=2)
+        
+        # Date
+        ttk.Label(email_frame, text="Date:").pack(anchor=tk.W, padx=5, pady=2)
+        self.date_entry = ttk.Entry(email_frame, width=60)
+        self.date_entry.pack(fill=tk.X, padx=5, pady=2)
+        
+        # Message Body
+        ttk.Label(email_frame, text="Message Body:").pack(anchor=tk.W, padx=5, pady=2)
+        self.body_text = scrolledtext.ScrolledText(email_frame, width=60, height=10)
+        self.body_text.pack(fill=tk.BOTH, padx=5, pady=2)
+        
+        # Headers adicionales
+        ttk.Label(email_frame, text="Additional Headers:").pack(anchor=tk.W, padx=5, pady=2)
+        self.headers_text = scrolledtext.ScrolledText(email_frame, width=60, height=5)
+        self.headers_text.pack(fill=tk.BOTH, padx=5, pady=2)
 
-# In[]:
-# Imprimir resultados
-print(prediction)
+    def clear_fields(self):
+        self.from_entry.delete(0, tk.END)
+        self.to_entry.delete(0, tk.END)
+        self.subject_entry.delete(0, tk.END)
+        self.date_entry.delete(0, tk.END)
+        self.body_text.delete('1.0', tk.END)
+        self.headers_text.delete('1.0', tk.END)
+        self.result_text.config(text="")
 
-if(prediction[0]==0):
-    print('Correo No Spam')
+    def analyze_email(self):
+        email_parts = [
+            f"From: {self.from_entry.get()}",
+            f"To: {self.to_entry.get()}",
+            f"Subject: {self.subject_entry.get()}",
+            f"Date: {self.date_entry.get()}",
+            self.headers_text.get('1.0', tk.END).strip(),
+            "",
+            self.body_text.get('1.0', tk.END).strip()
+        ]
+        
+        complete_email = "\n".join(email_parts)
+        
+        input_mail_features = vectorizer.transform([complete_email])
+        prediction = model.predict(input_mail_features)
+        
+        if prediction[0] == 0:
+            result = "Este correo NO es Spam"
+            color = "green"
+        else:
+            result = "Este correo es SPAM"
+            color = "red"
+            
+        self.result_text.config(text=result, foreground=color)
 
-else:
-    print('Correo Spam')
-
-print('Precisión:', precision)
-print('Recuperación:', recuperacion)
+if __name__ == "__main__":
+    root = tk.Tk()
+    app = SpamFilterGUI(root)
+    root.mainloop()
