@@ -117,3 +117,12 @@ El sistema muestra dos métricas principales:
 - El modelo se entrena con cada ejecución del programa
 - Los correos se procesan de manera similar al conjunto de entrenamiento
 - La interfaz permite analizar múltiples correos sin necesidad de reiniciar
+
+## Ejecución
+
+### No-Spam
+![image](https://github.com/user-attachments/assets/2c1fc96e-a473-48f7-818e-73db1129980b)
+
+### Spam
+![image](https://github.com/user-attachments/assets/9471a78b-f515-4227-a7f3-af2d504a90a7)
+
